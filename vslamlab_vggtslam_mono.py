@@ -15,6 +15,7 @@ detection (--run_os), which needs Perception Encoder / SAM 3.
 
 import argparse
 import time
+import webbrowser
 from pathlib import Path
 
 import cv2
@@ -70,6 +71,26 @@ def load_frames(sequence_path: Path, rgb_csv: Path, settings_yaml: Path | None) 
     return image_names, timestamps
 
 
+def wait_for_viewer_clients(server, first_client_timeout_s: float = 60.0) -> None:
+    """Keep the final map viewable: return once every viser client has disconnected, or when
+    nobody connected within first_client_timeout_s (headless machine), or on Ctrl+C."""
+    t0 = time.time()
+    had_clients = False
+    try:
+        while True:
+            num_clients = len(server.get_clients())
+            had_clients = had_clients or num_clients > 0
+            if had_clients and num_clients == 0:
+                print("(viser) All clients disconnected. Shutting down server.")
+                return
+            if not had_clients and time.time() - t0 > first_client_timeout_s:
+                print(f"(viser) No client connected within {first_client_timeout_s:.0f} s. Shutting down server.")
+                return
+            time.sleep(0.5)
+    except KeyboardInterrupt:
+        return
+
+
 def main() -> None:
     args = build_parser().parse_args()
     vis_map = bool(int(args.verbose))
@@ -84,6 +105,11 @@ def main() -> None:
         vis_imgs=args.vis_imgs,
         enable_viewer=vis_map,
     )
+    if vis_map:
+        # The framework redirects stdout to a log file, so the viser URL is opened rather than printed only
+        viewer_url = f"http://localhost:{solver.viewer.server.get_port()}"
+        print(f"Viser viewer at {viewer_url}")
+        webbrowser.open(viewer_url)
 
     print("Initializing and loading VGGT model...")
     model = VGGT()
@@ -134,6 +160,10 @@ def main() -> None:
     keyframe_csv = args.exp_folder / f"{args.exp_it.zfill(5)}_KeyFrameTrajectory.csv"
     solver.map.write_poses_to_file_vslamlab(keyframe_csv, solver.graph)
     print(f"Trajectory written to {keyframe_csv}")
+
+    if vis_map:
+        solver.update_all_submap_vis()  # final optimized map
+        wait_for_viewer_clients(solver.viewer.server)
 
 
 if __name__ == "__main__":
