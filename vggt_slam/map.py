@@ -1,4 +1,5 @@
 import os
+import csv
 import numpy as np
 import torch
 import open3d as o3d
@@ -159,7 +160,30 @@ class GraphMap:
                     else:
                         quaternion = R.from_matrix(rotation_matrix).as_quat() # x, y, z, w
                         output = np.array([float(frame_id), x, y, z, *quaternion])
-                    f.write(" ".join(f"{v:.8f}" for v in output) + "\n")    
+                    f.write(" ".join(f"{v:.8f}" for v in output) + "\n")
+
+    def write_poses_to_file_vslamlab(self, file_name, graph):
+        """VSLAM-LAB trajectory csv: one row per keyframe, camera-to-world, frame ids as set by the
+        entry point (timestamps in ns). Loop closure helper submaps are skipped and the overlapping
+        frame shared by consecutive submaps is written once (with the earlier submap's estimate)."""
+        all_poses = self.get_all_cam_matricies(give_camera_mat=True, graph=graph)
+        written = set()
+        count = 0
+        with open(file_name, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["ts (ns)", "tx (m)", "ty (m)", "tz (m)", "qx", "qy", "qz", "qw"])
+            for submap in self.ordered_submaps_by_key():
+                if submap.get_lc_status():
+                    continue
+                for frame_id in submap.get_frame_ids():
+                    pose = all_poses[count]
+                    count += 1
+                    if frame_id in written:
+                        continue
+                    _, rotation_matrix, t, _ = decompose_camera(pose)
+                    qx, qy, qz, qw = R.from_matrix(rotation_matrix).as_quat()
+                    writer.writerow([frame_id, *t, qx, qy, qz, qw])
+                    written.add(frame_id)
 
     def write_points_to_file(self, graph, file_name):
         pcd_all = []

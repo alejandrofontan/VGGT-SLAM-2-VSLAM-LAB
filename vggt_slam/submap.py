@@ -131,13 +131,20 @@ class Submap:
     def get_frame_pointcloud(self, pose_index):
         return self.pointclouds[pose_index]
 
-    def set_frame_ids(self, file_paths):
+    def set_frame_ids(self, file_paths, timestamps=None):
         """
-        Extract the frame number (integer or decimal) from the file names, 
-        removing any leading zeros, and add them all to a list.
+        Extract the frame number (integer or decimal) from the file names,
+        removing any leading zeros, and add them all to a list. If `timestamps`
+        is given, those are used as the frame ids instead.
 
         Note: This does not include any of the loop closure frames.
         """
+        # VSLAM-LAB: explicit ids (timestamps in ns) take precedence over the filename regex
+        if timestamps is not None:
+            assert len(timestamps) == len(file_paths), "Number of timestamps and number of frames do not match"
+            self.frame_ids = list(timestamps)
+            return
+
         frame_ids = []
         for path in file_paths:
             filename = os.path.basename(path)

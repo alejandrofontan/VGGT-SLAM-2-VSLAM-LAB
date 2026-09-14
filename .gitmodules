@@ -1,0 +1,6 @@
+[submodule "third_party/vggt"]
+	path = third_party/vggt
+	url = https://github.com/MIT-SPARK/VGGT_SPARK.git
+[submodule "third_party/salad"]
+	path = third_party/salad
+	url = https://github.com/Dominic101/salad.git

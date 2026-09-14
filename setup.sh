@@ -1,41 +1,27 @@
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
 
+# VSLAM-LAB fork: SALAD and the MIT-SPARK fork of VGGT are pinned git submodules under third_party/
+# (upstream clones their default branches here). Perception Encoder and SAM 3 are only needed for
+# the optional open-set object detection (--run_os) and are not installed by this script.
+
 # 1. Install Python dependencies
 echo "Installing base requirements..."
 pip3 install -r requirements.txt
 
-mkdir -p third_party
+# 2. Fetch the pinned third-party sources
+echo "Fetching third-party submodules..."
+git submodule update --init --recursive
 
-# 2. Clone and install Salad
-echo "Cloning and installing Salad..."
-cd third_party
-git clone https://github.com/Dominic101/salad.git
-pip install -e ./salad
-cd ..
+# 3. Install Salad
+echo "Installing Salad..."
+pip install -e third_party/salad
 
-# 3. Clone and install our fork of VGGT
-echo "Cloning and installing VGGT..."
-cd third_party
-git clone https://github.com/MIT-SPARK/VGGT_SPARK.git vggt
-pip install -e ./vggt
-cd ..
+# 4. Install our fork of VGGT
+echo "Installing VGGT..."
+pip install -e third_party/vggt
 
-# 4. Install Perception Encoder
-echo "Cloning and installing Perception Encoder..."
-cd third_party
-git clone https://github.com/facebookresearch/perception_models.git
-pip install -e ./perception_models
-cd ..
-
-# 5. Install SAM 3
-echo "Cloning and installing SAM 3..."
-cd third_party
-git clone https://github.com/facebookresearch/sam3.git
-pip install -e ./sam3
-cd ..
-
-# 6. Install current repo in editable mode
+# 5. Install current repo in editable mode
 echo "Installing current repo..."
 pip install -e .
 

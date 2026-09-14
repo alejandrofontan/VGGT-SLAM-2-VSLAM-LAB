@@ -29,6 +29,11 @@
 
 # This repo contains the code for VGGT-SLAM 2.0 (located here) and VGGT-SLAM (located on the version1.0 branch of this repo).
 
+> **VSLAM-LAB fork.** This fork is the `vggtslam` baseline of [VSLAM-LAB](https://github.com/VSLAM-LAB/VSLAM-LAB). On top of upstream it adds
+> the entry point `vslamlab_vggtslam_mono.py` (reads a VSLAM-LAB sequence and writes `<exp_folder>/<exp_it>_KeyFrameTrajectory.csv`),
+> timestamps as frame ids, a headless mode for the viser viewer, automatic download of the SALAD checkpoint, and pins SALAD and the
+> MIT-SPARK VGGT fork as git submodules under `third_party/` (clone with `--recursive`). Everything else is upstream VGGT-SLAM 2.0.
+
 ## 📚 Table of Contents
 * [💻 Installation](#installation-of-vGGT-sLAM)
 * [🚀 Quick Start](#quick-start)

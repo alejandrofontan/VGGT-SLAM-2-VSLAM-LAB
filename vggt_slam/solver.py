@@ -39,13 +39,15 @@ class Solver:
         init_conf_threshold: float,  # represents percentage (e.g., 50 means filter lowest 50%)
         lc_thres: float = 0.80,
         vis_voxel_size: float = None,
-        vis_imgs: bool = False):
+        vis_imgs: bool = False,
+        enable_viewer: bool = True):
 
         self.init_conf_threshold = init_conf_threshold
         self.vis_voxel_size = vis_voxel_size
         self.vis_imgs = vis_imgs
 
-        self.viewer = Viewer()
+        # VSLAM-LAB: batch runs are headless, so the viser server is optional
+        self.viewer = Viewer() if enable_viewer else None
 
         self.flow_tracker = FrameTracker()
         self.map = GraphMap()
@@ -91,11 +93,15 @@ class Solver:
         self.viewer.visualize_frames(extrinsics, images, submap.get_id())
 
     def update_all_submap_vis(self):
+        if self.viewer is None:
+            return
         for submap in self.map.get_submaps():
             self.set_submap_point_cloud(submap)
             self.set_submap_poses(submap)
 
     def update_latest_submap_vis(self):
+        if self.viewer is None:
+            return
         submap = self.map.get_latest_submap()
         self.set_submap_point_cloud(submap)
         self.set_submap_poses(submap)
@@ -274,7 +280,10 @@ class Solver:
             lc_submap = Submap(lc_submap_num)
             lc_submap.set_lc_status(True)
             lc_submap.add_all_frames(pred_dict["frames_lc"])
-            lc_submap.set_frame_ids(pred_dict["frames_lc_names"])
+            # Reuse the ids of the two frames as set on their own submaps, so loop closure frames never depend on the filename regex
+            lc_frame_ids = [self.current_working_submap.get_frame_ids()[loop.query_submap_frame],
+                            self.map.get_submap(loop.detected_submap_id).get_frame_ids()[loop.detected_submap_frame]]
+            lc_submap.set_frame_ids(pred_dict["frames_lc_names"], timestamps=lc_frame_ids)
             lc_submap.set_last_non_loop_frame_index(1)
 
             lc_submap.add_all_poses(world_to_cam_lc)
@@ -297,7 +306,7 @@ class Solver:
         pixel_coords = torch.stack((y_coords, x_coords), dim=1)
         return pixel_coords
 
-    def run_predictions(self, image_names, model, max_loops, clip_model, clip_preprocess):
+    def run_predictions(self, image_names, model, max_loops, clip_model=None, clip_preprocess=None, timestamps=None):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         t1 = time.time()
         with self.vggt_timer:
@@ -318,7 +327,7 @@ class Solver:
         t1 = time.time()
         new_submap = Submap(new_pcd_num)
         new_submap.add_all_frames(images)
-        new_submap.set_frame_ids(image_names)
+        new_submap.set_frame_ids(image_names, timestamps)
         new_submap.set_last_non_loop_frame_index(images.shape[0] - 1)
         new_submap.set_all_retrieval_vectors(self.image_retrieval.get_all_submap_embeddings(new_submap))
         new_submap.set_img_names(image_names)

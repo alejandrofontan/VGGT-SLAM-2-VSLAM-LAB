@@ -1,12 +1,5 @@
 # Ignore some files from the installation/demo
 office_loop/
-gtsam_with_sl4/
-gtsam/
-salad/
-vggt/
-perception_models/
-sam3/
-third_party/
 keyframes/
 
 # Ignore setup files from VSCode and Pycharm

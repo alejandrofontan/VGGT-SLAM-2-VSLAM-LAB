@@ -11,6 +11,27 @@ from salad.eval import load_model # load salad
 
 device = 'cuda'
 
+# Upstream reads the checkpoint from the torch hub cache but never fetches it (MIT-SPARK/VGGT-SLAM PR #36)
+SALAD_CKPT_URL = "https://github.com/serizba/salad/releases/download/v1.0.0/dino_salad.ckpt"
+SALAD_CKPT_NAME = "dino_salad.ckpt"
+
+
+def ensure_salad_checkpoint() -> str:
+    ckpt_path = os.path.join(torch.hub.get_dir(), "checkpoints", SALAD_CKPT_NAME)
+    if os.path.isfile(ckpt_path) and os.path.getsize(ckpt_path) > 0:
+        return ckpt_path
+
+    os.makedirs(os.path.dirname(ckpt_path), exist_ok=True)
+    try:
+        torch.hub.download_url_to_file(SALAD_CKPT_URL, ckpt_path)
+    except Exception as exc:
+        raise RuntimeError(
+            f"SALAD checkpoint not found at {ckpt_path} and automatic download failed. "
+            f"Please place {SALAD_CKPT_NAME} at {ckpt_path} (source: {SALAD_CKPT_URL})."
+        ) from exc
+
+    return ckpt_path
+
 tensor_transform = T.ToPILImage()
 denormalize = T.Normalize(mean=[-1, -1, -1], std=[2, 2, 2])
 
@@ -52,7 +73,7 @@ class LoopMatchQueue:
 class ImageRetrieval:
     def __init__(self, input_size=224):
 
-        ckpt_pth = os.path.join(torch.hub.get_dir(), "checkpoints/dino_salad.ckpt")
+        ckpt_pth = ensure_salad_checkpoint()
         self.model = load_model(ckpt_pth)
         self.model.eval()
         self.transform = input_transform((input_size, input_size))
