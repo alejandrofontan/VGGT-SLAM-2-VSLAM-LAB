@@ -40,6 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--exp_it", type=str, default="0")
     parser.add_argument("--settings_yaml", type=Path, default=None)
     parser.add_argument("--verbose", type=str, default="0", help="1 starts the viser viewer and updates it per submap")
+    parser.add_argument("--mode", type=str, default="mono", choices=["mono"], help="VSLAM-LAB mode (selects this entry point; only mono is supported)")
 
     # VGGT-SLAM parameters (defaults = upstream main.py / evals/eval_tum.sh)
     parser.add_argument("--submap_size", type=int, default=16, help="Number of new frames per submap, does not include overlapping frames or loop closure frames")
