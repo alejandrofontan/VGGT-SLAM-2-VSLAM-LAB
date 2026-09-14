@@ -167,3 +167,6 @@ dmypy.json
 **/tmp/
 **/outputs/skyseg.onnx
 skyseg.onnx
+
+# VSLAM-LAB install log (BaselineVSLAMLAB.install)
+install_*.txt
